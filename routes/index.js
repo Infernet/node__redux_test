@@ -15,7 +15,7 @@ router.use(function(request, response, next){
             var decoded = jwt.verify(token, publicKey);
             response.json({login:decoded.login});
         } catch(err) {
-            response.send(err);
+            response.sendStatus(400);
         }
     }
     else
