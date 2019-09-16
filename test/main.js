@@ -10,16 +10,16 @@ function start() {
     };
 
     axios.post(
-        '/login',
-        {},
+        '/request/login',
+        bodyParameters,
         {
             headers:{
                 'Authorization': 'Bearer ' + localStorage.getItem('token')
             }
         }
     ).then((response) => {
-        console.log(response)
+        console.log(response.data)
     }).catch((error) => {
-        console.log(error)
+        console.log(error);
     });
 }
