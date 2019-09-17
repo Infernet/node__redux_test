@@ -11,10 +11,12 @@ app.use(logger('dev'));
 //Routers
 const indexRouter=require('../routes/indexRouter');
 const errorRouter=require('../routes/errorRouter');
-const postRouter=require('../routes/postRouter');
+const postRouter=require('../routes/authorizationRouter');
+const usersRouter=require('../routes/usersRouter');
 
 app.use('/',indexRouter);
-app.use('/request',postRouter);
+app.use('/request/login',postRouter);
+app.use('/request/user',usersRouter);
 app.use('*',errorRouter);
 
 

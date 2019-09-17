@@ -1,15 +1,17 @@
+import {DB_DIALECT, DB_HOST, DB_LOGIN, DB_NAME, DB_PASSWORD} from "../constants/dataBase";
+
 const user = require('./User');
 
 const Sequelize = require("sequelize");
-const sequelize = new Sequelize("react", "infernet", "admin", {
-    dialect: "mysql",
-    host: "localhost",
+const sequelize = new Sequelize(DB_NAME, DB_LOGIN, DB_PASSWORD, {
+    dialect: DB_DIALECT,
+    host: DB_HOST,
     define: {
         timestamps: false
     }
 });
 
-var User = user(sequelize, Sequelize);
+const User = user(sequelize, Sequelize);
 
 
 module.exports = {

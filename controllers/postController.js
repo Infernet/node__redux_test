@@ -1,9 +1,6 @@
-const jwt = require('jsonwebtoken');
-const fs = require('fs');
 const db = require('../models/index');
+const {validateToken, getToken} = require("../utility/utility");
 
-const privateKey = fs.readFileSync(__dirname + '/../keys/private.pem');
-const publicKey = fs.readFileSync(__dirname + '/../keys/public.pem');
 
 exports.loginAuth = (req, res) => {
     if (!req.body)
@@ -15,16 +12,8 @@ exports.loginAuth = (req, res) => {
         }, raw: true
     })
         .then(user => {
-            let result = {
-                id: user.id,
-                login: user.login,
-                firstName: user.firstName,
-                lastName: user.LastName,
-                email: user.email
-            };
-            const token = jwt.sign(result, privateKey, {algorithm: "RS256"});
             res.json({
-                token: token
+                token: getToken(user)
             });
         })
         .catch(reason => {
@@ -36,12 +25,11 @@ exports.loginAuth = (req, res) => {
 exports.tokenAuth = (req, res, next) => {
     if (req.headers.authorization) {
         const token = req.headers.authorization.slice(7);
-        try {
-            const decoded = jwt.verify(token, publicKey);
-            res.json({login: decoded.login});
-        } catch (err) {
+        if (validateToken(token))
+            res.json({token: token});
+        else
             res.sendStatus(400);
-        }
     } else
         next();
 };
+
