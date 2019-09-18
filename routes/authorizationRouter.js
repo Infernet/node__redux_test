@@ -1,5 +1,5 @@
 const express=require('express');
-const controller=require('../controllers/postController');
+const controller=require('../controllers/authorizationController');
 const bodyParser=require('body-parser');
 
 const urlencodedParser = bodyParser.urlencoded({extended: false});

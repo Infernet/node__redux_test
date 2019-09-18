@@ -1,4 +1,4 @@
-import {DB_DIALECT, DB_HOST, DB_LOGIN, DB_NAME, DB_PASSWORD} from "../constants/dataBase";
+const {DB_DIALECT, DB_HOST, DB_LOGIN, DB_NAME, DB_PASSWORD} = require("../constants/dataBase");
 
 const user = require('./User');
 

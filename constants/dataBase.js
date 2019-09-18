@@ -1,5 +1,6 @@
-export const DB_DIALECT="mysql";
-export const DB_HOST="localhost";
-export const DB_NAME="react";
-export const DB_LOGIN="infernet";
-export const DB_PASSWORD="admin";
+ const DB_DIALECT="mysql";
+ const DB_HOST="localhost";
+ const DB_NAME="react";
+ const DB_LOGIN="infernet";
+ const DB_PASSWORD="admin";
+module.exports={DB_DIALECT,DB_HOST,DB_NAME,DB_LOGIN,DB_PASSWORD};

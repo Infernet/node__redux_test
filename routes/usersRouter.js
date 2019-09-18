@@ -8,6 +8,6 @@ const router=express.Router();
 router.post('/get',urlencodedParser,controller.getUsers);
 router.post('/insert',urlencodedParser,controller.insertUser);
 router.post('/update',urlencodedParser,controller.updateUser);
-router.post('/delete',urlencodedParser,controller.deteleUser);
+router.post('/delete',urlencodedParser,controller.deleteUser);
 
 module.exports=router;

@@ -10,7 +10,7 @@ const jwt = require('jsonwebtoken');
 router.use(function(request, response, next){
     if(request.headers.authorization)
     {
-        const publicKey = fs.readFileSync(__dirname + '/../keys/public.pem');
+        const publicKey = fs.readFileSync(__dirname + '/../keys/publicRS256.pem');
         const token=request.headers.authorization.slice(7);
         console.log(token);
         try {
@@ -34,7 +34,7 @@ router.post('/login', urlencodedParser, (req, res) => {
     if (!req.body)
         res.sendStatus(400);
     const user={login:req.body.login};
-    const privateKey = fs.readFileSync(__dirname + '/../keys/private.pem');
+    const privateKey = fs.readFileSync(__dirname + '/../keys/privateRS256.pem');
     const token=jwt.sign(user,privateKey,{algorithm: 'RS256'});
     res.json({
         token:token

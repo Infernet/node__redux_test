@@ -1,13 +1,21 @@
+var token="";
+
 function start() {
     let bodyParameters = {
-        token:"test"
+        token: token
     };
     axios.post(
-        '/request/users/get',
+        '/request/user/get',
         bodyParameters,
     ).then((response) => {
         console.log(response.data)
     }).catch((error) => {
         console.log(error);
     });
+}
+
+function create() {
+    axios.post('/request/login/login', {login: "infernet", password: "admin"})
+        .then(response=>console.log(response))
+        .catch(reason => console.log(reason))
 }
