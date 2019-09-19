@@ -1,11 +1,10 @@
 const express=require('express');
 const controller=require('../controllers/authorizationController');
-const bodyParser=require('body-parser');
 
-const urlencodedParser = bodyParser.urlencoded({extended: false});
 const router=express.Router();
 
-router.post('/login',urlencodedParser,controller.loginAuth);
-router.post('/token',urlencodedParser,controller.tokenAuth);
+router.post('/login-auth',controller.loginAuth);
+router.post('/token-auth',controller.tokenAuth);
+router.post('/refresh-token',controller.tokenRefresh);
 
 module.exports=router;

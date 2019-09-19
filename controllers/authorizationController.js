@@ -2,7 +2,7 @@ const db = require('../models/index');
 const {JWT_VALID_TOKEN} = require("../constants/jwt");
 const {JWT_INVALID_SIGNATURE} = require("../constants/jwt");
 const {JWT_TOKEN_TIME_OUT} = require("../constants/jwt");
-const {validateToken, getAccessToken, getRefreshToken} = require("../utility/jwtUtility");
+const {validateToken, getAccessToken, getRefreshToken, decodeToken} = require("../utility/jwtUtility");
 
 
 exports.loginAuth = (req, res) => {
@@ -15,14 +15,18 @@ exports.loginAuth = (req, res) => {
         }, raw: true
     })
         .then(user => {
-            res.json({
-                accessToken: getAccessToken(user),
-                refreshToken: getRefreshToken(user)
-            });
+            let userData = {id: user.id, login: user.login};
+            let tokens = {
+                accessToken: getAccessToken(userData),
+                refreshToken: getRefreshToken({id: userData.id}),
+            };
+            let accessExpiresIn = decodeToken(tokens.accessToken).payload.exp;
+            let response=Object.assign(tokens, userData, {accessExpiresIn: accessExpiresIn});
+            res.json(response);
         })
         .catch(reason => {
             console.log(reason);
-            res.sendStatus(400);
+            res.status(400).json({});
         });
 };
 
@@ -32,7 +36,9 @@ exports.tokenAuth = (req, res, next) => {
         let validResult = validateToken(token);
         switch (validResult.status) {
             case JWT_VALID_TOKEN:
-                res.json({accessToken: token});
+                db.User.findByPk(validResult.payload.id)
+                    .then(user => res.json({id: user.id, login: user.login}))
+                    .catch(reason => res.sendStatus(400));
                 break;
             case JWT_TOKEN_TIME_OUT:
                 res.sendStatus(401);
@@ -49,17 +55,23 @@ exports.tokenAuth = (req, res, next) => {
 
 exports.tokenRefresh = (req, res, next) => {
     if (req.headers.refresh) {
-        let token = req.headers.authorization.slice(7);
+        let token = req.headers.refresh.slice(7);
         let validResult = validateToken(token);
         switch (validResult.status) {
             case JWT_VALID_TOKEN:
-                db.User.findOne({
-                    where: {id: validResult.payload.id}
-                }).then(user => {
-                    res.json({
-                        accessToken: getAccessToken(user),
-                        refreshToken: getRefreshToken(user)
-                    });
+                /*
+                * Разобраться с payload (возвращает undefined)
+                *
+                * */
+                db.User.findByPk(validResult.payload.id)
+                    .then(user => {
+                    let userData = {id: user.id, login: user.login};
+                    let tokens = {
+                        accessToken: getAccessToken(userData),
+                        refreshToken: getRefreshToken({id: userData.id}),
+                    };
+                    let accessExpiresIn = decodeToken(tokens.accessToken).payload.expiresIn;
+                    res.json(Object.assign(tokens, userData, {accessExpiresIn: accessExpiresIn}));
                 })
                     .catch(reason => res.sendStatus(400));
                 break;

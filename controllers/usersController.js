@@ -1,59 +1,123 @@
 const db = require('../models/index');
-const {validateToken, decodeToken} = require("../utility/jwtUtility");
+const {JWT_INVALID_SIGNATURE} = require("../constants/jwt");
+const {JWT_TOKEN_TIME_OUT} = require("../constants/jwt");
+const {JWT_VALID_TOKEN} = require("../constants/jwt");
+const {validateToken} = require("../utility/jwtUtility");
 
 
 exports.getUsers = (req, res) => {
-    validate=validateToken(req.body.token,req,res);
-    if (validate.status) {
-        let decode=decodeToken(req.body.token);
-        let user = decode.payload;
-        db.User.findOne({
-            where: {id: user.id},
-            raw: true
-        })
-            .then(user => {
-                if (user.role < 1)
-                    throw new Error();
-                db.User.findAll()
-                    .then(response => {
-                        res.json({users: response});
+    if (!req.body)
+        res.sendStatus(400);
+    let token = req.body.token;
+    let validResult = validateToken(token);
+    switch (validResult.status) {
+        case JWT_VALID_TOKEN:
+            if (validResult.payload.id >= 1)
+                db.User.findAll({
+                    where: {role: 0},
+                    raw: true
+                })
+                    .then(users => {
+                        res.json({users: users});
                     })
-                    .catch(reason => {
-                        res.status(400).send(reason);
-                    });
-            })
-            .catch(reason => res.sendStatus(400));
+                    .catch(reason => res.sendStatus(500));
+            else
+                res.sendStatus(403);
+            break;
+        case JWT_TOKEN_TIME_OUT:
+            res.sendStatus(401);
+            break;
+        case JWT_INVALID_SIGNATURE:
+            res.sendStatus(400);
+            break;
+        default:
+            res.sendStatus(400);
     }
-    else
-        res.json(validate.error);
 };
 
 exports.insertUser = (req, res) => {
-    if (validateToken(req.body.token)) {
-        let user = decodeToken(req.body.token).payload;
-        db.User.findOne({
-            where: {id: user.id},
-            raw: true
-        })
-            .then(user => {
-                if (user.role < 1)
-                    throw new Error();
-                db.User.create(req.body.data)
-                    .then(response => {
-                        db.User.findAll()
+    if (!req.body)
+        res.sendStatus(400);
+    let token = req.body.token;
+    let validResult = validateToken(token);
+    switch (validResult.status) {
+        case JWT_VALID_TOKEN:
+            if (validResult.payload.id >= 1)
+                db.User.create(req.body.user)
+                    .then(user => {
+                        db.User.findAll({raw: true})
                             .then(users => res.json({users: users}))
-                            .catch(reason => res.sendStatus(400))
+                            .catch(reason => res.sendStatus(500))
                     })
-                    .catch(reason => res.sendStatus(400));
-            })
-    } else
-        res.sendStatus(504);
+                    .catch(reason => res.sendStatus(500));
+            else
+                res.sendStatus(403);
+            break;
+        case JWT_TOKEN_TIME_OUT:
+            res.sendStatus(401);
+            break;
+        case JWT_INVALID_SIGNATURE:
+            res.sendStatus(400);
+            break;
+        default:
+            res.sendStatus(400);
+    }
 };
 
 exports.updateUser = (req, res) => {
-    res.sendStatus(504);
+    if (!req.body)
+        res.sendStatus(400);
+    let token = req.body.token;
+    let validResult = validateToken(token);
+    switch (validResult.status) {
+        case JWT_VALID_TOKEN:
+            if (validResult.payload.id >= 1)
+                db.User.update(req.body.user.data, {where: {id: req.body.user.id}})
+                    .then(user => {
+                        db.User.findAll({raw: true})
+                            .then(users => res.json({users: users}))
+                            .catch(reason => res.sendStatus(500));
+                    })
+                    .catch(reason => res.sendStatus(500));
+            else
+                res.sendStatus(403);
+            break;
+        case JWT_TOKEN_TIME_OUT:
+            res.sendStatus(401);
+            break;
+        case JWT_INVALID_SIGNATURE:
+            res.sendStatus(400);
+            break;
+        default:
+            res.sendStatus(400);
+    }
 };
 
 exports.deleteUser = (req, res) => {
-    res.sendStatus(504);
+    if (!req.body)
+        res.sendStatus(400);
+    let token = req.body.token;
+    let validResult = validateToken(token);
+    switch (validResult.status) {
+        case JWT_VALID_TOKEN:
+            if (validResult.payload.id >= 1)
+                db.User.destroy({where: {id: req.body.user.id}})
+                    .then(user => {
+                        db.User.findAll({raw: true})
+                            .then(users => res.json({users: users}))
+                            .catch(reason => res.sendStatus(500));
+                    })
+                    .catch(reason => res.sendStatus(500));
+            else
+                res.sendStatus(403);
+            break;
+        case JWT_TOKEN_TIME_OUT:
+            res.sendStatus(401);
+            break;
+        case JWT_INVALID_SIGNATURE:
+            res.sendStatus(400);
+            break;
+        default:
+            res.sendStatus(400);
+    }
 };
