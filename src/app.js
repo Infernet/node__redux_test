@@ -2,6 +2,7 @@ const express=require('express');
 const path=require('path');
 const bodyParser=require('body-parser');
 const logger = require('morgan');
+const db=require('../models/index');
 
 const app=express();
 app.use(express.static(path.join(__dirname, '../public')));
@@ -25,4 +26,10 @@ app.use('*',errorRouter);
 
 app.listen(process.env.PORT, process.env.HOST, () => {
     console.log('Server mysql&express ready http://' + process.env.HOST + ':' + process.env.PORT);
+    db.User.findByPk(1).then(user=>{
+       user.getSession().then(session=>{
+           console.log(session[1].fingerPrint);
+       })
+    });
+    //db.sync();
 });

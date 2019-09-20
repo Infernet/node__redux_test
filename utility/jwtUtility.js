@@ -15,7 +15,7 @@ exports.validateToken = token => {
     try {
         let decode = jwt.verify(token, privateKey);
         return {
-            payload: decode.data,
+            payload: decode,
             status: JWT_VALID_TOKEN
         };
     } catch (error) {
