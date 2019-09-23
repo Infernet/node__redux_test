@@ -16,13 +16,20 @@ exports.loginAuth = (req, res) => {
     })
         .then(user => {
             let userData = {id: user.id, login: user.login};
-            let tokens = {
-                accessToken: getAccessToken(userData),
-                refreshToken: getRefreshToken({id: userData.id}),
-            };
-            let accessExpiresIn = decodeToken(tokens.accessToken).payload.exp;
-            let response=Object.assign(tokens, userData, {accessExpiresIn: accessExpiresIn});
-            res.json(response);
+            getRefreshToken(user.id, req.body.fingerPrint)
+                .then(resolve => {
+                    let tokens = {
+                        accessToken: getAccessToken(userData),
+                        refreshToken: resolve,
+                    };
+                    let accessExpiresIn = decodeToken(tokens.accessToken).payload.exp;
+                    let response = Object.assign(tokens, userData, {accessExpiresIn: accessExpiresIn});
+                    res.json(response);
+                })
+                .catch(reason => {
+                    res.status(400).json({});
+                });
+
         })
         .catch(reason => {
             console.log(reason);
@@ -65,14 +72,14 @@ exports.tokenRefresh = (req, res, next) => {
                 * */
                 db.User.findByPk(validResult.payload.id)
                     .then(user => {
-                    let userData = {id: user.id, login: user.login};
-                    let tokens = {
-                        accessToken: getAccessToken(userData),
-                        refreshToken: getRefreshToken({id: userData.id}),
-                    };
-                    let accessExpiresIn = decodeToken(tokens.accessToken).payload.expiresIn;
-                    res.json(Object.assign(tokens, userData, {accessExpiresIn: accessExpiresIn}));
-                })
+                        let userData = {id: user.id, login: user.login};
+                        let tokens = {
+                            accessToken: getAccessToken(userData),
+                            refreshToken: getRefreshToken({id: userData.id}),
+                        };
+                        let accessExpiresIn = decodeToken(tokens.accessToken).payload.expiresIn;
+                        res.json(Object.assign(tokens, userData, {accessExpiresIn: accessExpiresIn}));
+                    })
                     .catch(reason => res.sendStatus(400));
                 break;
             case JWT_TOKEN_TIME_OUT:

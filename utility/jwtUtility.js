@@ -9,6 +9,7 @@ const {JWT_VALID_TOKEN} = require("../constants/jwt");
 const {JWT_INVALID_SIGNATURE} = require("../constants/jwt");
 const {JWT_TOKEN_TIME_OUT} = require("../constants/jwt");
 const privateKey = fs.readFileSync(__dirname + '/../keys/privateHS256.pem');
+const db = require('../models/index');
 
 
 exports.validateToken = token => {
@@ -31,8 +32,28 @@ exports.validateToken = token => {
 exports.getAccessToken = (user) => {
     return jwt.sign(user, privateKey, {algorithm: JWT_ALG, expiresIn: JWT_ACCESS_EXP})
 };
-exports.getRefreshToken = (user) => {
-    return jwt.sign({id: user.id}, privateKey, {algorithm: JWT_ALG, expiresIn: JWT_REFRESH_EXP});
+exports.getRefreshToken = (id, fingerPrint) => {
+    return new Promise(((resolve, reject) => {
+        db.User.findByPk(id)
+            .then(user => {
+                db.UserSession.findAll({where: {UserId: user.id}})
+                    .then(sessions => {
+                        sessions.every(session => {
+                            if (session.dataValues.fingerPrint === fingerPrint) {
+                                session.update({fingerPrint: fingerPrint})
+                                    .then(result => resolve(result.fingerPrint))
+                                    .catch(reason => reject(reason));
+                                return false;
+                            }
+                        });
+                        user.createSession({fingerPrint:fingerPrint})
+                            .then(session=>resolve(session.fingerPrint))
+                            .catch(reason => reject(reason));
+                    })
+                    .catch(reason => reject(reason))
+            })
+            .catch(reason => reject(reason));
+    }));
 };
 exports.decodeToken = token => {
     let split = token.split('.');
