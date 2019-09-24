@@ -1,15 +1,15 @@
 const db = require('../models/index');
+const {validateAccessToken} = require("../utility/jwtUtility");
 const {JWT_INVALID_SIGNATURE} = require("../constants/jwt");
 const {JWT_TOKEN_TIME_OUT} = require("../constants/jwt");
 const {JWT_VALID_TOKEN} = require("../constants/jwt");
-const {validateToken} = require("../utility/jwtUtility");
 
 
 exports.getUsers = (req, res) => {
     if (!req.body)
         res.sendStatus(400);
     let token = req.body.token;
-    let validResult = validateToken(token);
+    let validResult = validateAccessToken(token);
     switch (validResult.status) {
         case JWT_VALID_TOKEN:
             if (validResult.payload.id >= 1)
@@ -20,15 +20,13 @@ exports.getUsers = (req, res) => {
                     .then(users => {
                         res.json({users: users});
                     })
-                    .catch(reason => res.sendStatus(500));
+                    .catch(reason => res.sendStatus(400));
             else
-                res.sendStatus(403);
+                res.sendStatus(400);
             break;
         case JWT_TOKEN_TIME_OUT:
-            res.sendStatus(401);
-            break;
         case JWT_INVALID_SIGNATURE:
-            res.sendStatus(400);
+            res.sendStatus(401);
             break;
         default:
             res.sendStatus(400);

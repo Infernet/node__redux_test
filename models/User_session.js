@@ -10,8 +10,12 @@ module.exports=(sequelize, DataTypes)=>{
         fingerPrint:{
          type:DataTypes.STRING,
          allowNull:false
+        },
+        expiresIn:{
+            type:DataTypes.INTEGER,
+            allowNull:false
         }
     }, {
-        timestamps: true
+        timestamps: false
     });
 }

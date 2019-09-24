@@ -5,6 +5,7 @@ const router=express.Router();
 
 router.post('/login-auth',controller.loginAuth);
 router.post('/token-auth',controller.tokenAuth);
-router.post('/refresh-token',controller.tokenRefresh);
+router.post('/refresh-token',controller.refreshAccessToken);
+router.post('/sign-out',controller.signOut);
 
 module.exports=router;

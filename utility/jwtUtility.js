@@ -12,7 +12,7 @@ const privateKey = fs.readFileSync(__dirname + '/../keys/privateHS256.pem');
 const db = require('../models/index');
 
 
-exports.validateToken = token => {
+exports.validateAccessToken = token => {
     try {
         let decode = jwt.verify(token, privateKey);
         return {
@@ -28,33 +28,56 @@ exports.validateToken = token => {
         }
     }
 };
+exports.validateRefreshToken = (userId, refreshToken) => {
+    return new Promise(((resolve, reject) => {
+        db.UserSession.findOne({where: {UserId: userId, fingerPrint: refreshToken}})
+            .then(session => {
+                if (session !== null) {
+                    let nowTime = Math.floor(new Date().getTime() / 1000);
+                    if (nowTime <= session.expiresIn)
+                        resolve(JWT_VALID_TOKEN);
+                    else
+                        reject(JWT_TOKEN_TIME_OUT);
+                } else
+                    reject(JWT_INVALID_SIGNATURE);
+            })
+            .catch(reason => reject(JWT_INVALID_SIGNATURE));
+    }));
+};
 
 exports.getAccessToken = (user) => {
     return jwt.sign(user, privateKey, {algorithm: JWT_ALG, expiresIn: JWT_ACCESS_EXP})
 };
-exports.getRefreshToken = (id, fingerPrint) => {
+
+exports.setRefreshToken = (userId, fingerPrint) => {
     return new Promise(((resolve, reject) => {
-        db.User.findByPk(id)
-            .then(user => {
-                db.UserSession.findAll({where: {UserId: user.id}})
-                    .then(sessions => {
-                        sessions.every(session => {
-                            if (session.dataValues.fingerPrint === fingerPrint) {
-                                session.update({fingerPrint: fingerPrint})
-                                    .then(result => resolve(result.fingerPrint))
-                                    .catch(reason => reject(reason));
-                                return false;
-                            }
-                        });
-                        user.createSession({fingerPrint:fingerPrint})
-                            .then(session=>resolve(session.fingerPrint))
-                            .catch(reason => reject(reason));
+        db.UserSession.findOne({where: {UserId: userId, fingerPrint: fingerPrint}})
+            .then(session => {
+                if (session !== null)
+                    session.destroy()
+                        .then(() => {
+                            db.UserSession.create({
+                                UserId: userId,
+                                fingerPrint: fingerPrint,
+                                expiresIn: (Math.floor(new Date().getTime() / 1000) + JWT_REFRESH_EXP)
+                            })
+                                .then(session => resolve(session))
+                                .catch(reason => reject(reason));
+                        })
+                        .catch(reason => reject(reason));
+                else
+                    db.UserSession.create({
+                        UserId: userId,
+                        fingerPrint: fingerPrint,
+                        expiresIn: (Math.floor(new Date().getTime() / 1000) + JWT_REFRESH_EXP)
                     })
-                    .catch(reason => reject(reason))
+                        .then(session => resolve(session))
+                        .catch(reason => reject(reason));
             })
             .catch(reason => reject(reason));
-    }));
+    }))
 };
+
 exports.decodeToken = token => {
     let split = token.split('.');
     return {
