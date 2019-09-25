@@ -1,15 +1,17 @@
-const {} = require("../constants/jwt");
+const {
+    JWT_REFRESH_EXP,
+    JWT_ACCESS_EXP,
+    JWT_ALG,
+    JWT_VALID_TOKEN,
+    JWT_INVALID_SIGNATURE,
+    JWT_TOKEN_TIME_OUT
+} = require("../constants/jwt");
 const atob = require('atob');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
-const {JWT_REFRESH_EXP} = require("../constants/jwt");
-const {JWT_ACCESS_EXP} = require("../constants/jwt");
-const {JWT_ALG} = require("../constants/jwt");
-const {JWT_VALID_TOKEN} = require("../constants/jwt");
-const {JWT_INVALID_SIGNATURE} = require("../constants/jwt");
-const {JWT_TOKEN_TIME_OUT} = require("../constants/jwt");
 const privateKey = fs.readFileSync(__dirname + '/../keys/privateHS256.pem');
 const db = require('../models/index');
+const crypto = require('crypto');
 
 
 exports.validateAccessToken = token => {
@@ -28,18 +30,16 @@ exports.validateAccessToken = token => {
         }
     }
 };
-exports.validateRefreshToken = (userId, refreshToken) => {
+exports.validateRefreshToken = (refreshToken, fingerPrint) => {
     return new Promise(((resolve, reject) => {
-        db.UserSession.findOne({where: {UserId: userId, fingerPrint: refreshToken}})
+        db.UserSession.findOne({where: {refreshToken: refreshToken, fingerPrint: fingerPrint}})
             .then(session => {
-                if (session !== null) {
-                    let nowTime = Math.floor(new Date().getTime() / 1000);
-                    if (nowTime <= session.expiresIn)
-                        resolve(JWT_VALID_TOKEN);
-                    else
-                        reject(JWT_TOKEN_TIME_OUT);
-                } else
-                    reject(JWT_INVALID_SIGNATURE);
+                if (session === null) throw new Error();
+                let nowTime = Math.floor(new Date().getTime() / 1000);
+                if (nowTime <= session.expiresIn)
+                    resolve({status: JWT_VALID_TOKEN, sessionId: session.id});
+                else
+                    reject(JWT_TOKEN_TIME_OUT);
             })
             .catch(reason => reject(JWT_INVALID_SIGNATURE));
     }));
@@ -49,32 +49,19 @@ exports.getAccessToken = (user) => {
     return jwt.sign(user, privateKey, {algorithm: JWT_ALG, expiresIn: JWT_ACCESS_EXP})
 };
 
-exports.setRefreshToken = (userId, fingerPrint) => {
+exports.setRefreshToken = (user, fingerPrint) => {
     return new Promise(((resolve, reject) => {
-        db.UserSession.findOne({where: {UserId: userId, fingerPrint: fingerPrint}})
-            .then(session => {
-                if (session !== null)
-                    session.destroy()
-                        .then(() => {
-                            db.UserSession.create({
-                                UserId: userId,
-                                fingerPrint: fingerPrint,
-                                expiresIn: (Math.floor(new Date().getTime() / 1000) + JWT_REFRESH_EXP)
-                            })
-                                .then(session => resolve(session))
-                                .catch(reason => reject(reason));
-                        })
-                        .catch(reason => reject(reason));
-                else
-                    db.UserSession.create({
-                        UserId: userId,
-                        fingerPrint: fingerPrint,
-                        expiresIn: (Math.floor(new Date().getTime() / 1000) + JWT_REFRESH_EXP)
-                    })
-                        .then(session => resolve(session))
-                        .catch(reason => reject(reason));
-            })
-            .catch(reason => reject(reason));
+        let currentDate = new Date().getTime();
+        let refreshToken = crypto.createHash('sha1')
+            .update(currentDate.toString() + (Math.random().toString()) + fingerPrint)
+            .digest('hex');
+        user.createSession({
+            fingerPrint: fingerPrint,
+            refreshToken: refreshToken,
+            expiresAt: ((currentDate / 1000) + JWT_REFRESH_EXP)
+        })
+            .then(session => resolve(session.refreshToken))
+            .catch(() => reject());
     }))
 };
 

@@ -22,8 +22,8 @@ module.exports = {
     "DataTypes": Sequelize,
     "User": User,
     "UserSession":UserSession,
-    'sync': (forse) => {
-        sequelize.sync(forse).then(result => {
+    'sync': (force) => {
+        sequelize.sync(force).then(result => {
             console.log(result);
         })
             .catch(err => console.log(err));

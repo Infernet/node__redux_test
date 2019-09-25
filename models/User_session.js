@@ -6,12 +6,16 @@ module.exports=(sequelize, DataTypes)=>{
             primaryKey: true,
             allowNull: false
         },
-
         fingerPrint:{
          type:DataTypes.STRING,
          allowNull:false
         },
-        expiresIn:{
+        refreshToken:{
+            type:DataTypes.STRING,
+            allowNull:false,
+            unique: 'index_unique_refreshToken'
+        },
+        expiresAt:{
             type:DataTypes.INTEGER,
             allowNull:false
         }

@@ -12,8 +12,8 @@ const {
 
 
 exports.loginAuth = (req, res) => {
-    if (!req.body)
-        res.sendStatus(400);
+    if (!req.body) res.sendStatus(400);
+    let userData, accessToken;
     db.User.findOne({
         where: {
             login: req.body.login,
@@ -21,30 +21,16 @@ exports.loginAuth = (req, res) => {
         }, raw: true
     })
         .then(user => {
-            if(user!==null) {
-                let userData = {id: user.id, login: user.login, role: user.role};
-                let accessToken = getAccessToken(userData);
-                setRefreshToken(user.id, req.body.fingerPrint)
-                    .then(resolve => {
-                        let tokens = {
-                            accessToken: accessToken,
-                            refreshToken: resolve.fingerPrint,
-                            accessExpiresIn: decodeToken(accessToken).payload.exp
-                        };
-                        let response = Object.assign(tokens, userData);
-                        res.json(response);
-                    })
-                    .catch(reason => {
-                        res.status(400).json({});
-                    });
-            }
-            else
-                res.status(400).json({});
+            userData = {id: user.id, login: user.login, role: user.role};
+            accessToken = getAccessToken(userData);
+            return setRefreshToken(user, req.body.fingerPrint);
         })
-        .catch(reason => {
-            console.log(reason);
-            res.status(400).json({});
-        });
+        .then(refreshToken => {
+            let tokens = {accessToken: accessToken, refreshToken: refreshToken};
+            let response = {user: userData, token: tokens};
+            res.json(response);
+        })
+        .catch(reason => res.sendStatus(400));
 };
 
 exports.tokenAuth = (req, res) => {
@@ -54,11 +40,10 @@ exports.tokenAuth = (req, res) => {
         switch (validResult.status) {
             case JWT_VALID_TOKEN:
                 db.User.findByPk(validResult.payload.id)
-                    .then(user => res.json({id: user.id, login: user.login, role: user.role}))
+                    .then(user => res.json({user: {id: user.id, login: user.login, role: user.role}}))
                     .catch(reason => res.sendStatus(400));
                 break;
             case JWT_TOKEN_TIME_OUT:
-            case JWT_INVALID_SIGNATURE:
                 res.sendStatus(401);
                 break;
             default:
@@ -69,23 +54,32 @@ exports.tokenAuth = (req, res) => {
 };
 
 exports.refreshAccessToken = (req, res) => {
-    if (req.headers.refresh && req.headers.userid) {
-        let token = req.headers.refresh.slice(7);
-        let userId = req.headers.userid;
-        validateRefreshToken(userId, token)
-            .then(status => {
-                if (status === JWT_VALID_TOKEN)
-                    db.User.findByPk(userId)
-                        .then(user => {
-                            let accessToken = getAccessToken({id: user.id, login: user.login, role: user.role});
-                            let accessExpiresIn = decodeToken(accessToken).payload.expiresIn;
-                            res.json({accessToken: accessToken, accessExpiresIn: accessExpiresIn});
-                        })
-                        .catch(reason => res.sendStatus(400));
-                else throw new Error(JWT_INVALID_SIGNATURE);
-            })
-            .catch(status => {
-                switch (status) {
+    if (!req.headers.authorization || !req.body)
+        res.sendStatus(400);
+    let refreshToken = req.headers.authorization.slice(7);
+    let userId, accessToken;
+    validateRefreshToken(refreshToken, req.body.fingerPrint)
+        .then(resolve => {
+            return db.UserSession.findByPk(resolve.sessionId)
+        })
+        .then(session => {
+            userId = session.UserId;
+            return session.destroy();
+        })
+        .then(() => {
+            return db.User.findByPk(userId);
+        })
+        .then(user => {
+            accessToken = getAccessToken({id: user.id, login: user.login, role: user.role});
+            return setRefreshToken(user, req.body.fingerPrint);
+        })
+        .then(refreshToken => {
+            if (!accessToken && !refreshToken) throw new Error();
+            res.json({accessToken: accessToken, refreshToken: refreshToken});
+        })
+        .catch(reason => {
+            if (reason.status)
+                switch (reason.status) {
                     case JWT_TOKEN_TIME_OUT:
                     case JWT_INVALID_SIGNATURE:
                         res.sendStatus(401);
@@ -93,9 +87,9 @@ exports.refreshAccessToken = (req, res) => {
                     default:
                         res.sendStatus(400);
                 }
-            });
-    } else
-        res.sendStatus(400);
+            else
+                res.sendStatus(400);
+        });
 };
 
 exports.signOut = (req, res) => {
