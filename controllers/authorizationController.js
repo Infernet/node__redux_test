@@ -6,8 +6,7 @@ const {
     setRefreshToken,
     validateRefreshToken,
     getAccessToken,
-    validateAccessToken,
-    decodeToken
+    validateAccessToken
 } = require("../utility/jwtUtility");
 
 
@@ -18,7 +17,7 @@ exports.loginAuth = (req, res) => {
         where: {
             login: req.body.login,
             password: req.body.password
-        }, raw: true
+        }, raw: false
     })
         .then(user => {
             userData = {id: user.id, login: user.login, role: user.role};
@@ -93,20 +92,14 @@ exports.refreshAccessToken = (req, res) => {
 };
 
 exports.signOut = (req, res) => {
-    if (req.headers.access && req.headers.refresh) {
-        try {
-            let access = decodeToken(req.headers.access.slice(7));
-            let refresh = req.headers.refresh.slice(7);
-            db.UserSession.findOne({where: {UserId: access.payload.id, fingerPrint: refresh}})
-                .then(session => {
-                    session.destroy()
-                        .then(() => res.sendStatus(200))
-                        .catch(() => res.sendStatus(401));
-                })
-                .catch(() => res.sendStatus(401));
-        } catch (e) {
-            res.sendStatus(400);
-        }
+    if (req.headers.authorization && req.body) {
+        let token = req.headers.authorization.slice(7);
+        db.UserSession.findOne({where: {fingerPrint: res.body.fingerPrint, refreshToken: token}})
+            .then(session => {
+                return session.destroy();
+            })
+            .then(() => res.sendStatus(200))
+            .catch(reason => res.sendStatus(400));
     } else
         res.sendStatus(400);
 };

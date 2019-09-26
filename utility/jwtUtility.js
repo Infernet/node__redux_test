@@ -6,7 +6,6 @@ const {
     JWT_INVALID_SIGNATURE,
     JWT_TOKEN_TIME_OUT
 } = require("../constants/jwt");
-const atob = require('atob');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const privateKey = fs.readFileSync(__dirname + '/../keys/privateHS256.pem');
@@ -36,10 +35,13 @@ exports.validateRefreshToken = (refreshToken, fingerPrint) => {
             .then(session => {
                 if (session === null) throw new Error();
                 let nowTime = Math.floor(new Date().getTime() / 1000);
-                if (nowTime <= session.expiresIn)
+                if (nowTime <= session.expiresAt)
                     resolve({status: JWT_VALID_TOKEN, sessionId: session.id});
-                else
-                    reject(JWT_TOKEN_TIME_OUT);
+                else {
+                    session.destroy()
+                        .then(() => reject(JWT_TOKEN_TIME_OUT))
+                        .catch(() => reject(JWT_INVALID_SIGNATURE))
+                }
             })
             .catch(reason => reject(JWT_INVALID_SIGNATURE));
     }));
@@ -58,17 +60,9 @@ exports.setRefreshToken = (user, fingerPrint) => {
         user.createSession({
             fingerPrint: fingerPrint,
             refreshToken: refreshToken,
-            expiresAt: ((currentDate / 1000) + JWT_REFRESH_EXP)
+            expiresAt: Math.floor((currentDate / 1000) + JWT_REFRESH_EXP)
         })
             .then(session => resolve(session.refreshToken))
             .catch(() => reject());
     }))
-};
-
-exports.decodeToken = token => {
-    let split = token.split('.');
-    return {
-        header: JSON.parse(atob(split[0])),
-        payload: JSON.parse(atob(split[1]))
-    }
 };

@@ -3,35 +3,30 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const logger = require('morgan');
 const db = require('../models/index');
-const crypto = require('crypto');
+//Routers
+const indexRouter = require('../routes/indexRouter');
+const errorRouter = require('../routes/errorRouter');
+const authRouter = require('../routes/authorizationRouter');
+const usersRouter = require('../routes/usersRouter');
 
 const app = express();
 app.use(express.static(path.join(__dirname, '../public')));
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
 app.use(logger('dev'));
-//Routers
-const indexRouter = require('../routes/indexRouter');
-const errorRouter = require('../routes/errorRouter');
-const authRouter = require('../routes/authorizationRouter');
-const usersRouter = require('../routes/usersRouter');
-const {setRefreshToken} = require("../utility/jwtUtility");
+
 
 app.use('/', indexRouter);
 app.use('/request/login', authRouter);
 app.use('/request/user', usersRouter);
 app.use('*', errorRouter);
 
-db.User.findByPk(3).then(user=>{
-    setRefreshToken(user,'testRefresh');
-});
 
-
-// app.listen(process.env.PORT, process.env.HOST, () => {
-//     console.log('Server mysql&express ready http://' + process.env.HOST + ':' + process.env.PORT);
+app.listen(process.env.PORT, process.env.HOST, () => {
+    console.log('Server mysql&express ready http://' + process.env.HOST + ':' + process.env.PORT);
     //{force:true}
-    //db.sync();
-// });
+    db.sync();
+});
 /*
 INSERT INTO `Users` ( `login`, `password`, `role`, `firstName`, `lastName`, `email`) VALUES
 ( 'max338', 'qwerty', 0, 'Max', 'Petrov', 'test@mail.ru'),

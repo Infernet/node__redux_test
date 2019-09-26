@@ -1,6 +1,6 @@
 const JWT_ALG = "HS256";
 const JWT_ACCESS_EXP = 60;
-const JWT_REFRESH_EXP = 60*5;
+const JWT_REFRESH_EXP = 60*10;
 const JWT_VALID_TOKEN = "JWT_VALID_TOKEN";
 const JWT_INVALID_SIGNATURE = "JsonWebTokenError";
 const JWT_TOKEN_TIME_OUT = "TokenExpiredError";
