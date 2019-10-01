@@ -39,12 +39,10 @@ exports.insertUser = (req, res) => {
                 res.sendStatus(400);
             db.User.create(req.body.user)
                 .then(() => {
-                    return db.User.findAll({where: {role: 0}, raw: true})
-                })
-                .then(() => {
                     return dbGetUsers()
                 })
                 .then(response => res.json(response))
+                .catch(reason => res.sendStatus(400));
             break;
         case JWT_TOKEN_TIME_OUT:
         case JWT_INVALID_SIGNATURE:

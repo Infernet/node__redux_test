@@ -2,7 +2,7 @@ const db = require('../models/index');
 
 exports.dbGetUsers = () => {
     return new Promise((resolve, reject) => {
-        db.User.findAll({where: {role: 0}})
+        db.User.findAll()
             .then(users => {
                 let response = {
                     users: users.map(e => {

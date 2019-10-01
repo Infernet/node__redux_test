@@ -20,6 +20,7 @@ User.hasMany(UserSession,{as:"Session"});
 module.exports = {
     "sequelize": sequelize,
     "DataTypes": Sequelize,
+    "Operations":Sequelize.Op,
     "User": User,
     "UserSession":UserSession,
     'sync': (force) => {
