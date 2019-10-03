@@ -4,7 +4,7 @@
   "private": true,
   "description": "the tutorial project node.js with react",
   "scripts": {
-    "start": "PORT=3000 HOST='127.0.0.1' nodemon src/app.js"
+    "start": "PORT=5000 HOST='127.0.0.1' nodemon src/app.js"
   },
   "keywords": [
     "node.js"
@@ -15,6 +15,7 @@
     "atob": "^2.1.2",
     "body-parser": "^1.19.0",
     "cookie-parser": "~1.4.4",
+    "cors": "^2.8.5",
     "debug": "~2.6.9",
     "express": "~4.16.1",
     "jsonwebtoken": "^8.5.1",

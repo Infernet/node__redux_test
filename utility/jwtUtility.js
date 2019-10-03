@@ -39,8 +39,8 @@ exports.validateRefreshToken = (refreshToken, fingerPrint) => {
                     resolve({status: JWT_VALID_TOKEN, sessionId: session.id});
                 else {
                     session.destroy()
-                        .then(() => reject(JWT_TOKEN_TIME_OUT))
-                        .catch(() => reject(JWT_INVALID_SIGNATURE))
+                        .then(response => reject(JWT_TOKEN_TIME_OUT))
+                        .catch(reason => reject(JWT_INVALID_SIGNATURE))
                 }
             })
             .catch(reason => reject(JWT_INVALID_SIGNATURE));

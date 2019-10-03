@@ -21,3 +21,20 @@ exports.dbGetUsers = () => {
             .catch(reason => reject(reason))
     })
 };
+
+exports.dbClearRefreshTokens=()=>{
+    const Op = db.Operations;
+    const nowTime = Math.floor(new Date().getTime() / 1000);
+    db.UserSession.findAll({
+        where: {
+            expiresAt: {
+                [Op.lte]: nowTime
+            }
+        }
+    })
+        .then(sessions => {
+            if (sessions !== null && sessions.length !== 0)
+                sessions.forEach(e => e.destroy());
+        })
+        .catch(reason => console.error(reason));
+}

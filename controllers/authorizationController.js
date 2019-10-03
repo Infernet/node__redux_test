@@ -1,4 +1,5 @@
 const db = require('../models/index');
+const {dbClearRefreshTokens} = require("../utility/dbUtility");
 const {JWT_VALID_TOKEN} = require("../constants/jwt");
 const {JWT_INVALID_SIGNATURE} = require("../constants/jwt");
 const {JWT_TOKEN_TIME_OUT} = require("../constants/jwt");
@@ -25,8 +26,8 @@ exports.loginAuth = (req, res) => {
             return setRefreshToken(user, req.body.fingerPrint);
         })
         .then(refreshToken => {
-            let tokens = {accessToken: accessToken, refreshToken: refreshToken};
-            let response = {user: userData, token: tokens};
+            let tokens={accessToken: accessToken, refreshToken: refreshToken};
+            let response = {user: userData, tokens:tokens};
             res.json(response);
         })
         .catch(reason => res.sendStatus(400));
@@ -82,6 +83,7 @@ exports.refreshAccessToken = (req, res) => {
                     case JWT_TOKEN_TIME_OUT:
                     case JWT_INVALID_SIGNATURE:
                         res.sendStatus(401);
+                        dbClearRefreshTokens();
                         break;
                     default:
                         res.sendStatus(400);

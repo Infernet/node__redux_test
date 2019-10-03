@@ -54,7 +54,7 @@ exports.insertUser = (req, res) => {
 };
 
 exports.updateUser = (req, res) => {
-    if (!req.headers.authorization || !req.body)
+    if (!req.headers.authorization || !req.body || req.body.userId === null)
         res.sendStatus(400);
     let token = req.headers.authorization.slice(7);
     let validResult = validateAccessToken(token);
@@ -62,7 +62,7 @@ exports.updateUser = (req, res) => {
         case JWT_VALID_TOKEN:
             if (validResult.payload.role < 1)
                 res.sendStatus(400);
-            db.User.update(req.body.user.data, {where: {id: req.body.user.id}})
+            db.User.update(req.body.userData, {where: {id: req.body.userId}})
                 .then(() => {
                     return db.User.findAll({where: {role: 0}, raw: true})
                 })
@@ -89,7 +89,10 @@ exports.deleteUser = (req, res) => {
         case JWT_VALID_TOKEN:
             if (validResult.payload.role < 1)
                 res.sendStatus(400);
-            db.User.destroy({where: {id: req.body.user.id}})
+            db.User.findByPk(req.body.id)
+                .then(user => {
+                    return user.destroy()
+                })
                 .then(() => {
                     return dbGetUsers()
                 })
